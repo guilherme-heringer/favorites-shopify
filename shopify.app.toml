@@ -1,0 +1,42 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "5db4e5ec4aa8507e04162f33d11eab0f"
+name = "Favoritos - Lemoon"
+application_url = "https://example.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,write_customers,customer_read_customers"
+
+[auth]
+redirect_urls = [ "https://example.com/api/auth" ]
+
+[app_proxy]
+url = "https://example.com/apps/avise-me"
+subpath = "avise-me"
+prefix = "apps"
+
+# Customer favorites metafield (app-owned, declarative).
+# Resolves to namespace "$app" key "favorites" of type list.product_reference.
+[customer.metafields.app.favorites]
+name = "Favoritos - Lemoon"
+description = "Products favorited by the customer."
+type = "list.product_reference"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+access.customer_account = "read"

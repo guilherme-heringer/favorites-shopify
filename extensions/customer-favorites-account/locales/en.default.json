@@ -1,0 +1,9 @@
+{
+  "heading": "Favorites",
+  "loading": "Loading favorites...",
+  "errorFallback": "Failed to load favorites.",
+  "empty": "You have no saved favorites yet.",
+  "showing": "Showing {shown} of {total}",
+  "viewProduct": "View product",
+  "viewAll": "View all favorites"
+}

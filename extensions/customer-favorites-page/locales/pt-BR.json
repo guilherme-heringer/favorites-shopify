@@ -1,0 +1,24 @@
+{
+  "page": {
+    "heading": "Favoritos"
+  },
+  "section": {
+    "heading": "Produtos salvos"
+  },
+  "loading": "Carregando favoritos...",
+  "errorFallback": "Falha ao carregar favoritos.",
+  "favoritesUpdateError": "Falha ao atualizar favoritos.",
+  "empty": "Você ainda não tem favoritos salvos.",
+  "select": "Selecionar",
+  "outOfStockNotice": "Este produto está esgotado e não pode ser selecionado para compra.",
+  "viewProduct": "Ver produto",
+  "removeOne": "Remover dos favoritos",
+  "removeAll": {
+    "cta": "Remover todos",
+    "loading": "Removendo..."
+  },
+  "buyAll": {
+    "cta": "Comprar todos",
+    "selectedSuffix": "selecionado(s)"
+  }
+}

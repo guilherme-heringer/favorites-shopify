@@ -1,0 +1,27 @@
+# Learn more about configuring your Customer account UI extension:
+# https://shopify.dev/api/customer-account-ui-extensions/unstable/configuration
+
+# The version of APIs your extension will receive. Learn more:
+# https://shopify.dev/docs/api/usage/versioning
+api_version = "2026-04"
+
+[[extensions]]
+name = "Favoritos - Lemoon (página)"
+handle = "customer-favorites-page"
+type = "ui_extension"
+uid = "fa707e98-21de-c6b6-9990-b5329b8b8f9c2057e3c5"
+
+# Controls where in Shopify your extension will be injected,
+# and the file that contains your extension’s source code. Learn more:
+# https://shopify.dev/docs/api/customer-account-ui-extensions/unstable/extension-targets-overview
+
+[[extensions.targeting]]
+module = "./src/FavoritesPage.tsx"
+target = "customer-account.page.render"
+
+[extensions.capabilities]
+# Gives your extension access to directly query Shopify’s storefront API
+# via `shopify.query(...)` and the Customer Account API via
+# `fetch('shopify://customer-account/api/<version>/graphql.json')`.
+# https://shopify.dev/docs/api/customer-account-ui-extensions/unstable/configuration#api-access
+api_access = true

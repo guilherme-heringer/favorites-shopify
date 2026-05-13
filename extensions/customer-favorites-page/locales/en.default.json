@@ -1,0 +1,24 @@
+{
+  "page": {
+    "heading": "Favorites"
+  },
+  "section": {
+    "heading": "Saved products"
+  },
+  "loading": "Loading favorites...",
+  "errorFallback": "Failed to load favorites.",
+  "favoritesUpdateError": "Failed to update favorites.",
+  "empty": "You have no saved favorites yet.",
+  "select": "Select",
+  "outOfStockNotice": "This product is out of stock and cannot be selected for checkout.",
+  "viewProduct": "View product",
+  "removeOne": "Remove from favorites",
+  "removeAll": {
+    "cta": "Remove all",
+    "loading": "Removing..."
+  },
+  "buyAll": {
+    "cta": "Buy all",
+    "selectedSuffix": "selected"
+  }
+}

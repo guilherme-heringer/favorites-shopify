@@ -1,0 +1,163 @@
+{%- liquid
+  assign is_favorited = false
+  if customer
+    assign favorites = customer.metafields.app.favorites.value
+    if favorites
+      for item in favorites
+        if item.id == product.id
+          assign is_favorited = true
+          break
+        endif
+      endfor
+    endif
+  endif
+-%}
+
+<div
+  class="favoritos-root"
+  id="favoritos-root-{{ block.id }}"
+  data-customer-id="{{ customer.id }}"
+  data-login-url="{{ routes.account_login_url }}"
+  data-product-url="{{ product.url }}"
+  data-product-id="{{ product.id }}"
+  data-is-favorited="{{ is_favorited }}"
+  data-label-add="{{ block.settings.label_add | escape }}"
+  data-label-remove="{{ block.settings.label_remove | escape }}"
+  data-label-login="{{ block.settings.label_login | escape }}"
+  data-label-saving="{{ block.settings.label_saving | escape }}"
+  data-label-error="{{ block.settings.label_error | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <button
+    type="button"
+    class="favoritos-heart-button{% if is_favorited %} is-favorited{% endif %}"
+    aria-pressed="{{ is_favorited }}"
+    aria-label="{{ block.settings.heart_aria_label | escape }}"
+  >
+    <span class="favoritos-heart-icon favoritos-heart-icon--unfilled" aria-hidden="true">
+      {{ block.settings.icon_unfilled_svg }}
+    </span>
+    <span class="favoritos-heart-icon favoritos-heart-icon--filled" aria-hidden="true">
+      {{ block.settings.icon_filled_svg }}
+    </span>
+  </button>
+  <p class="favoritos-status" aria-live="polite"></p>
+</div>
+
+<script src="{{ 'favorites_button.js' | asset_url }}" defer></script>
+
+<style>
+  .favoritos-root {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .favoritos-heart-button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    color: #111;
+    display: inline-flex;
+    line-height: 0;
+  }
+
+  .favoritos-heart-button.is-favorited {
+    color: #d72f6a;
+  }
+
+  .favoritos-heart-button[disabled] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .favoritos-heart-icon {
+    display: inline-flex;
+  }
+
+  .favoritos-heart-icon svg {
+    width: 26px;
+    height: 26px;
+    display: block;
+  }
+
+  .favoritos-heart-icon--filled {
+    display: none;
+  }
+
+  .favoritos-heart-button.is-favorited .favoritos-heart-icon--unfilled {
+    display: none;
+  }
+
+  .favoritos-heart-button.is-favorited .favoritos-heart-icon--filled {
+    display: inline-flex;
+  }
+
+  .favoritos-status {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+
+  .favoritos-status a {
+    text-decoration: underline;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Favorites button",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heart_aria_label",
+      "label": "Accessibility label",
+      "default": "Add to favorites"
+    },
+    {
+      "type": "textarea",
+      "id": "icon_unfilled_svg",
+      "label": "Heart icon (unfilled SVG)",
+      "default": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z\"/></svg>"
+    },
+    {
+      "type": "textarea",
+      "id": "icon_filled_svg",
+      "label": "Heart icon (filled SVG)",
+      "default": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z\"/></svg>"
+    },
+    {
+      "type": "text",
+      "id": "label_add",
+      "label": "Status text after adding",
+      "default": "Added to favorites."
+    },
+    {
+      "type": "text",
+      "id": "label_remove",
+      "label": "Status text after removing",
+      "default": "Removed from favorites."
+    },
+    {
+      "type": "text",
+      "id": "label_login",
+      "label": "Login required text",
+      "default": "Sign in to save favorites."
+    },
+    {
+      "type": "text",
+      "id": "label_saving",
+      "label": "Saving text",
+      "default": "Saving..."
+    },
+    {
+      "type": "text",
+      "id": "label_error",
+      "label": "Error text",
+      "default": "Could not save favorite."
+    }
+  ]
+}
+{% endschema %}

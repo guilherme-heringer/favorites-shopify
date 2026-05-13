@@ -1,0 +1,53 @@
+{
+  "customerFavorites": {
+    "settings": {
+      "title": {
+        "label": "Title",
+        "default": "My favorites"
+      },
+      "subtitle": {
+        "label": "Subtitle",
+        "default": "Products you saved"
+      },
+      "textAlignment": {
+        "label": "Text alignment"
+      },
+      "showPrice": {
+        "label": "Show price"
+      },
+      "showButton": {
+        "label": "Show button"
+      },
+      "buttonText": {
+        "label": "Button text",
+        "default": "View product"
+      },
+      "loading": {
+        "label": "Loading text",
+        "default": "Loading favorites..."
+      },
+      "emptyTitle": {
+        "label": "Empty title",
+        "default": "You do not have favorites yet."
+      },
+      "emptySubtitle": {
+        "label": "Empty subtitle",
+        "default": "Save products to see them here."
+      },
+      "loginMessage": {
+        "label": "Login message",
+        "default": "Sign in to view your favorites."
+      },
+      "loginButton": {
+        "label": "Login button label",
+        "default": "Sign in"
+      },
+      "columnsDesktop": {
+        "label": "Desktop columns"
+      },
+      "columnsMobile": {
+        "label": "Mobile columns"
+      }
+    }
+  }
+}

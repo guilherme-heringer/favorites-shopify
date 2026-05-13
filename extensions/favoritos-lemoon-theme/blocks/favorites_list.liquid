@@ -1,0 +1,233 @@
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{%- liquid
+  assign favorites_payload = ''
+  if customer
+    assign favorites = customer.metafields.app.favorites.value
+    if favorites
+      assign product_ids = ''
+      for item in favorites
+        if forloop.first
+          assign product_ids = item.id | append: ''
+        else
+          assign product_ids = product_ids | append: ',' | append: item.id
+        endif
+      endfor
+      assign favorites_payload = product_ids
+    endif
+  endif
+-%}
+
+<div
+  class="favoritos-list-root favoritos-list-root-{{ ai_gen_id }}"
+  id="favoritos-list-root-{{ ai_gen_id }}"
+  data-customer-id="{{ customer.id }}"
+  data-login-url="{{ routes.account_login_url }}"
+  data-favorites-payload="{{ favorites_payload }}"
+  data-show-price="{{ block.settings.show_price }}"
+  data-show-button="{{ block.settings.show_button }}"
+  data-button-text="{{ block.settings.button_text | escape }}"
+  data-empty-title="{{ block.settings.empty_title | escape }}"
+  data-empty-subtitle="{{ block.settings.empty_subtitle | escape }}"
+  data-login-message="{{ block.settings.login_message | escape }}"
+  data-login-button-label="{{ block.settings.login_button_label | escape }}"
+  data-loading-label="{{ block.settings.loading_label | escape }}"
+  data-money-format="{{ shop.money_format | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="favoritos-list-header">
+    {% if block.settings.title != blank %}
+      <h2>{{ block.settings.title }}</h2>
+    {% endif %}
+    {% if block.settings.subtitle != blank %}
+      <p>{{ block.settings.subtitle }}</p>
+    {% endif %}
+  </div>
+  <div class="favoritos-list-grid" id="favoritos-list-grid-{{ ai_gen_id }}"></div>
+</div>
+
+<script src="{{ 'favorites_list.js' | asset_url }}" defer></script>
+
+<style>
+  .favoritos-list-root-{{ ai_gen_id }} {
+    width: 100%;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-header {
+    margin-bottom: 16px;
+    text-align: {{ block.settings.text_alignment }};
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-header h2 {
+    margin: 0 0 8px;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-header p {
+    margin: 0;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-grid {
+    display: grid;
+    grid-template-columns: repeat({{ block.settings.columns_desktop }}, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-content {
+    padding: 12px;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-content h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-content p {
+    margin: 0 0 10px;
+    font-size: 14px;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-cta {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid #111;
+    color: #111;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-empty,
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-login,
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-loading {
+    grid-column: 1 / -1;
+    padding: 24px 12px;
+    text-align: center;
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+  }
+
+  .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-login a {
+    text-decoration: underline;
+  }
+
+  @media screen and (max-width: 749px) {
+    .favoritos-list-root-{{ ai_gen_id }} .favoritos-list-grid {
+      grid-template-columns: repeat({{ block.settings.columns_mobile }}, minmax(0, 1fr));
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Favorites list",
+  "target": "section",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "title",
+      "label": "Título",
+      "default": "Meus favoritos"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subtitle",
+      "label": "Subtítulo",
+      "default": "Produtos que você salvou"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Alinhamento do texto",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Mostrar preço",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_button",
+      "label": "Mostrar botão",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Texto do botão",
+      "default": "Ver produto"
+    },
+    {
+      "type": "text",
+      "id": "loading_label",
+      "label": "Texto de carregamento",
+      "default": "Carregando favoritos..."
+    },
+    {
+      "type": "text",
+      "id": "empty_title",
+      "label": "Título do estado vazio",
+      "default": "Você ainda não tem favoritos."
+    },
+    {
+      "type": "text",
+      "id": "empty_subtitle",
+      "label": "Subtítulo do estado vazio",
+      "default": "Salve produtos para vê-los aqui."
+    },
+    {
+      "type": "text",
+      "id": "login_message",
+      "label": "Mensagem de login",
+      "default": "Faça login para ver seus favoritos."
+    },
+    {
+      "type": "text",
+      "id": "login_button_label",
+      "label": "Texto do botão de login",
+      "default": "Fazer login"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Colunas no desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Colunas no mobile",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "2"
+    }
+  ]
+}
+{% endschema %}

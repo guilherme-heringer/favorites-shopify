@@ -1,0 +1,9 @@
+{
+  "heading": "Favoritos",
+  "loading": "A carregar favoritos...",
+  "errorFallback": "Não foi possível carregar os favoritos.",
+  "empty": "Ainda não tem favoritos guardados.",
+  "showing": "A mostrar {shown} de {total}",
+  "viewProduct": "Ver produto",
+  "viewAll": "Ver todos os favoritos"
+}

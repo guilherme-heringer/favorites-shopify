@@ -28,15 +28,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       { status: 401 },
     );
   }
+  const url = new URL(request.url);
+  const shop = url.searchParams.get("shop") ?? "";
+
   const { session, admin } = proxyAuth;
   if (!session || !admin) {
+    console.warn("[appProxy/register] no offline session", { shop });
     return Response.json(
-      { ok: false, error: "Sessão da loja não encontrada." },
+      {
+        ok: false,
+        error:
+          "App não autenticada nesta loja. Abra a app no admin Shopify (Apps → Favoritos - Lemoon) para reconectar.",
+      },
       { status: 401 },
     );
   }
 
-  const url = new URL(request.url);
   const loggedInCustomerId = (
     url.searchParams.get("logged_in_customer_id") ?? ""
   ).trim();
@@ -103,17 +110,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       { status: 401 },
     );
   }
+  const url = new URL(request.url);
+  const shop = url.searchParams.get("shop") ?? "";
+
   const { session, admin } = proxyAuth;
   if (!session || !admin) {
+    console.warn("[appProxy/register] no offline session", { shop });
     return Response.json(
-      { ok: false, error: "Sessão da loja não encontrada." },
+      {
+        ok: false,
+        error:
+          "App não autenticada nesta loja. Abra a app no admin Shopify (Apps → Favoritos - Lemoon) para reconectar.",
+      },
       { status: 401 },
     );
   }
 
   // Customer identity is taken ONLY from the signed App Proxy query string.
   // Never trust a customer id sent in the request body.
-  const url = new URL(request.url);
   const loggedInCustomerId = (
     url.searchParams.get("logged_in_customer_id") ?? ""
   ).trim();

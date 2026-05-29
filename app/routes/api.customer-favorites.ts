@@ -1,10 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { authenticate, unauthenticated } from "../shopify.server";
+import { authenticate } from "../shopify.server";
 import { saveCustomerFavoriteIds } from "../lib/save-customer-favorites.server";
-
-function shopFromSessionDest(dest: string): string {
-  return new URL(dest).hostname;
-}
+import { adminForCustomerAccountRequest } from "../lib/customer-account-admin.server";
 
 function parseProductIds(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
@@ -26,6 +23,29 @@ function withExtensionCors(response: Response): Response {
   });
 }
 
+function jsonWithCors(
+  body: Record<string, unknown>,
+  init?: ResponseInit,
+): Response {
+  return withExtensionCors(Response.json(body, init));
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Erro ao salvar favoritos.";
+}
+
+function handleRouteError(error: unknown): Response {
+  if (error instanceof Response) {
+    return withExtensionCors(error);
+  }
+  console.error("[api/customer-favorites] unhandled", error);
+  return jsonWithCors(
+    { ok: false, error: errorMessage(error) },
+    { status: 500 },
+  );
+}
+
 async function authenticateCustomerAccount(request: Request) {
   try {
     return await authenticate.public.customerAccount(request);
@@ -38,87 +58,82 @@ async function authenticateCustomerAccount(request: Request) {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  if (request.method === "OPTIONS") {
+  try {
+    if (request.method === "OPTIONS") {
+      return withExtensionCors(new Response(null, { status: 204 }));
+    }
+
+    const authResult = await authenticateCustomerAccount(request);
+    if ("response" in authResult) {
+      return authResult.response;
+    }
+
     return withExtensionCors(new Response(null, { status: 204 }));
+  } catch (error) {
+    return handleRouteError(error);
   }
-
-  const authResult = await authenticateCustomerAccount(request);
-  if ("response" in authResult) {
-    return authResult.response;
-  }
-
-  return withExtensionCors(new Response(null, { status: 204 }));
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  if (request.method === "OPTIONS") {
-    return withExtensionCors(new Response(null, { status: 204 }));
-  }
+  try {
+    if (request.method === "OPTIONS") {
+      return withExtensionCors(new Response(null, { status: 204 }));
+    }
 
-  if (request.method !== "POST") {
-    return withExtensionCors(
-      Response.json(
+    if (request.method !== "POST") {
+      return jsonWithCors(
         { ok: false, error: "Método não suportado." },
         { status: 405 },
-      ),
-    );
-  }
+      );
+    }
 
-  const authResult = await authenticateCustomerAccount(request);
-  if ("response" in authResult) {
-    return authResult.response;
-  }
+    const authResult = await authenticateCustomerAccount(request);
+    if ("response" in authResult) {
+      return authResult.response;
+    }
 
-  const { sessionToken } = authResult;
+    const { sessionToken } = authResult;
 
-  const customerGid = typeof sessionToken.sub === "string" ? sessionToken.sub : "";
-  const dest = typeof sessionToken.dest === "string" ? sessionToken.dest : "";
-  if (!customerGid || !dest) {
-    return withExtensionCors(
-      Response.json(
+    const customerGid =
+      typeof sessionToken.sub === "string" ? sessionToken.sub : "";
+    const dest = typeof sessionToken.dest === "string" ? sessionToken.dest : "";
+    if (!customerGid || !dest) {
+      return jsonWithCors(
         { ok: false, error: "Cliente não autenticado." },
         { status: 401 },
-      ),
-    );
-  }
+      );
+    }
 
-  let body: { productIds?: unknown };
-  try {
-    body = (await request.json()) as { productIds?: unknown };
-  } catch {
-    return withExtensionCors(
-      Response.json({ ok: false, error: "Payload inválido." }, { status: 400 }),
-    );
-  }
+    let body: { productIds?: unknown };
+    try {
+      body = (await request.json()) as { productIds?: unknown };
+    } catch {
+      return jsonWithCors({ ok: false, error: "Payload inválido." }, { status: 400 });
+    }
 
-  const productIds = parseProductIds(body.productIds);
-  if (!Array.isArray(body.productIds)) {
-    return withExtensionCors(
-      Response.json(
+    const productIds = parseProductIds(body.productIds);
+    if (!Array.isArray(body.productIds)) {
+      return jsonWithCors(
         { ok: false, error: "productIds é obrigatório." },
         { status: 400 },
-      ),
-    );
-  }
+      );
+    }
 
-  try {
-    const shop = shopFromSessionDest(dest);
-    const { admin } = await unauthenticated.admin(shop);
+    const admin = await adminForCustomerAccountRequest(request, dest);
     await saveCustomerFavoriteIds(admin, customerGid, productIds);
-    return withExtensionCors(
-      Response.json({ ok: true, count: productIds.length }),
-    );
+
+    return jsonWithCors({ ok: true, count: productIds.length });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Erro ao salvar favoritos.";
-    console.error("[api/customer-favorites] error", {
-      shop: shopFromSessionDest(dest),
-      customerGid,
-      message,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return withExtensionCors(
-      Response.json({ ok: false, error: message }, { status: 500 }),
-    );
+    if (error instanceof Response) {
+      console.error("[api/customer-favorites] response error", error.status);
+      return jsonWithCors(
+        { ok: false, error: "Erro ao autenticar com a loja." },
+        { status: error.status >= 400 ? error.status : 500 },
+      );
+    }
+
+    const message = errorMessage(error);
+    console.error("[api/customer-favorites] error", { message, error });
+    return jsonWithCors({ ok: false, error: message }, { status: 500 });
   }
 };

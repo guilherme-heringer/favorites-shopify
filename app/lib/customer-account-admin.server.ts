@@ -1,24 +1,29 @@
+import "@shopify/shopify-api/adapters/node";
 import { RequestedTokenType, shopifyApi } from "@shopify/shopify-api";
+import type { Shopify } from "@shopify/shopify-api";
 import { ApiVersion } from "@shopify/shopify-app-react-router/server";
 import shopify from "../shopify.server";
 
-function createShopifyApi() {
-  const appUrl = new URL(
-    process.env.SHOPIFY_APP_URL || "https://favorites-shopify.lemoon.dev",
-  );
-  return shopifyApi({
-    apiKey: process.env.SHOPIFY_API_KEY ?? "",
-    apiSecretKey: process.env.SHOPIFY_API_SECRET ?? "",
-    apiVersion: ApiVersion.April26,
-    scopes: process.env.SCOPES?.split(","),
-    hostName: appUrl.host,
-    hostScheme: appUrl.protocol.replace(":", ""),
-    isEmbeddedApp: true,
-    future: { unstable_managedPricingSupport: true },
-  });
-}
+let apiInstance: Shopify | null = null;
 
-const api = createShopifyApi();
+function getShopifyApi(): Shopify {
+  if (!apiInstance) {
+    const appUrl = new URL(
+      process.env.SHOPIFY_APP_URL || "https://favorites-shopify.lemoon.dev",
+    );
+    apiInstance = shopifyApi({
+      apiKey: process.env.SHOPIFY_API_KEY ?? "",
+      apiSecretKey: process.env.SHOPIFY_API_SECRET ?? "",
+      apiVersion: ApiVersion.April26,
+      scopes: process.env.SCOPES?.split(","),
+      hostName: appUrl.host,
+      hostScheme: appUrl.protocol.replace(":", ""),
+      isEmbeddedApp: true,
+      future: { unstable_managedPricingSupport: true },
+    });
+  }
+  return apiInstance;
+}
 
 export function shopFromSessionDest(dest: string): string {
   return dest.replace(/^https:\/\//, "").split("/")[0];
@@ -44,6 +49,7 @@ export async function adminForCustomerAccountRequest(
   request: Request,
   dest: string,
 ): Promise<CustomerAccountAdminClient> {
+  const api = getShopifyApi();
   const shop = shopFromSessionDest(dest);
   const sessionToken = readBearerToken(request);
 

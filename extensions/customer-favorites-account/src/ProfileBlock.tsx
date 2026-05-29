@@ -245,12 +245,6 @@ function Extension() {
   return (
     <s-stack gap="small-200">
       <s-heading>{i18n("heading")}</s-heading>
-      <s-text tone="subdued">
-        {i18n("showing", {
-          shown: state.items.length,
-          total: state.totalCount,
-        })}
-      </s-text>
       <s-grid
         gridTemplateColumns="repeat(auto-fill, minmax(160px, 1fr))"
         gap="small-200"

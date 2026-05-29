@@ -3,10 +3,10 @@ import { authenticate } from "../shopify.server";
 import {
   FAVORITES_METAFIELD_KEY,
   FAVORITES_METAFIELD_NAMESPACE,
-  FAVORITES_METAFIELD_TYPE,
   parseFavorites,
   toggleFavorite,
 } from "../lib/favorites";
+import { saveCustomerFavoriteIds } from "../lib/save-customer-favorites.server";
 import { normalizeProductGid } from "../lib/validation";
 
 type CustomerMetafieldQueryResponse = {
@@ -14,16 +14,6 @@ type CustomerMetafieldQueryResponse = {
     customer?: {
       metafield?: { value?: string | null } | null;
     } | null;
-  };
-  errors?: Array<{ message: string }>;
-};
-
-type MetafieldsSetResponse = {
-  data?: {
-    metafieldsSet?: {
-      metafields?: Array<{ id: string }>;
-      userErrors?: Array<{ field?: string[]; message: string; code?: string }>;
-    };
   };
   errors?: Array<{ message: string }>;
 };
@@ -194,49 +184,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const current = parseFavorites(readJson.data?.customer?.metafield?.value);
     const { next, action: toggleAction } = toggleFavorite(current, productGid);
 
-    const setResponse = await admin.graphql(
-      `#graphql
-        mutation SetFavorites($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-            }
-            userErrors {
-              field
-              message
-              code
-            }
-          }
-        }`,
-      {
-        variables: {
-          metafields: [
-            {
-              ownerId: customerGid,
-              namespace: FAVORITES_METAFIELD_NAMESPACE,
-              key: FAVORITES_METAFIELD_KEY,
-              type: FAVORITES_METAFIELD_TYPE,
-              value: JSON.stringify(next),
-            },
-          ],
-        },
-      },
-    );
-
-    const setJson = (await setResponse.json()) as MetafieldsSetResponse;
-    if (setJson.errors?.length) {
-      return Response.json(
-        { ok: false, error: setJson.errors[0].message },
-        { status: 500 },
-      );
-    }
-    const userErrors = setJson.data?.metafieldsSet?.userErrors ?? [];
-    if (userErrors.length > 0) {
-      return Response.json(
-        { ok: false, error: userErrors[0].message },
-        { status: 400 },
-      );
-    }
+    await saveCustomerFavoriteIds(admin, customerGid, next);
 
     return Response.json({
       ok: true,

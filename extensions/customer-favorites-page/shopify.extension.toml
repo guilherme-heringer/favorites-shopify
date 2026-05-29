@@ -25,3 +25,4 @@ target = "customer-account.page.render"
 # `fetch('shopify://customer-account/api/<version>/graphql.json')`.
 # https://shopify.dev/docs/api/customer-account-ui-extensions/unstable/configuration#api-access
 api_access = true
+network_access = true

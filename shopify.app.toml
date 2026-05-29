@@ -1,8 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
+# Public URLs below use PRODUCTION_APP_HOST (default: favorites-shopify.lemoon.dev).
+# Replace every occurrence with your real Coolify HTTPS host before `shopify app deploy`.
 client_id = "5db4e5ec4aa8507e04162f33d11eab0f"
 name = "Favoritos - Lemoon"
-application_url = "https://example.com"
+application_url = "https://favorites-shopify.lemoon.dev"
 embedded = true
 
 [build]
@@ -21,13 +23,16 @@ api_version = "2026-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_customers,write_customers,customer_read_customers"
+scopes = "read_customers,write_customers,customer_read_customers,customer_write_customers"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://favorites-shopify.lemoon.dev/auth/callback",
+  "https://favorites-shopify.lemoon.dev/auth/session-token"
+]
 
 [app_proxy]
-url = "https://example.com/apps/avise-me"
+url = "https://favorites-shopify.lemoon.dev/apps/avise-me"
 subpath = "avise-me"
 prefix = "apps"
 
@@ -39,4 +44,4 @@ description = "Products favorited by the customer."
 type = "list.product_reference"
 access.admin = "merchant_read"
 access.storefront = "public_read"
-access.customer_account = "read"
+access.customer_account = "read_write"

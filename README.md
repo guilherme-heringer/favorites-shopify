@@ -11,9 +11,13 @@ A Shopify app that lets shoppers favorite products from a product page heart but
 
 ## Required scopes
 
-`read_customers,write_customers,customer_read_customers`
+`read_customers,write_customers,customer_read_customers,customer_write_customers`
 
-`write_customers` is needed for the App Proxy action to update the customer metafield. `customer_read_customers` is required by the Customer Account API to read customer metafields inside the UI extensions.
+`write_customers` is needed for the App Proxy action to update the customer metafield. `customer_read_customers` and `customer_write_customers` are required by the Customer Account API to read and update customer metafields inside the UI extensions.
+
+## Production deploy (Coolify / real store)
+
+See **[docs/DEPLOY.md](docs/DEPLOY.md)** for PostgreSQL, environment variables, Coolify, Partner URLs, and a post-deploy checklist. Copy **[.env.example](.env.example)** to `.env` for local development (use a local `DATABASE_URL` pointing at Postgres).
 
 ## Upgrading from Remix
 
@@ -23,7 +27,7 @@ If you have an existing Remix app that you want to upgrade to React Router, plea
 
 ### Prerequisites
 
-Before you begin, you'll need to [download and install the Shopify CLI](https://shopify.dev/docs/apps/tools/cli/getting-started) if you haven't already.
+Before you begin, you'll need to [download and install the Shopify CLI](https://shopify.dev/docs/apps/tools/cli/getting-started) if you haven't already. The app server also expects **PostgreSQL** for sessions — set `DATABASE_URL` in `.env` (see [.env.example](.env.example) and [docs/DEPLOY.md](docs/DEPLOY.md)).
 
 ### Setup
 

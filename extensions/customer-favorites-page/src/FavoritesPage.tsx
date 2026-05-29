@@ -9,7 +9,7 @@ import { useEffect, useState } from "preact/hooks";
 const CUSTOMER_ACCOUNT_API_VERSION = "2026-04";
 const FAVORITES_NAMESPACE = "$app";
 const FAVORITES_KEY = "favorites";
-const FAVORITES_TYPE = "list.product_reference";
+const APP_BACKEND_URL = "https://favorites-shopify.lemoon.dev";
 
 type ProductVariant = {
   id: string;
@@ -36,16 +36,9 @@ type CustomerMetafieldResponse = {
   errors?: Array<{ message: string }>;
 };
 
-type CustomerAccountMutationResponse = {
-  data?: {
-    metafieldsSet?: {
-      userErrors?: Array<{ message?: string | null } | null> | null;
-    } | null;
-    customerSet?: {
-      userErrors?: Array<{ message?: string | null } | null> | null;
-    } | null;
-  };
-  errors?: Array<{ message?: string | null } | null>;
+type SaveFavoritesResponse = {
+  ok?: boolean;
+  error?: string;
 };
 
 type ProductVariantNode = {
@@ -139,99 +132,28 @@ async function fetchFavoriteIds(): Promise<string[]> {
 }
 
 async function saveFavoriteIds(nextIds: string[]): Promise<void> {
-  const value = JSON.stringify(nextIds);
-  const endpoint = `shopify://customer-account/api/${CUSTOMER_ACCOUNT_API_VERSION}/graphql.json`;
-  const tryMutation = async (
-    query: string,
-    variables: Record<string, unknown>,
-  ) => {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!response.ok) {
-      throw new Error("Customer Account API request failed.");
-    }
-    const json = (await response.json()) as CustomerAccountMutationResponse;
-    if (json.errors?.length) {
-      throw new Error(json.errors[0]?.message || "Failed to save favorites.");
-    }
-    const metafieldsSetErrors = json.data?.metafieldsSet?.userErrors ?? [];
-    if (metafieldsSetErrors.length) {
-      throw new Error(
-        metafieldsSetErrors[0]?.message || "Failed to save favorites.",
-      );
-    }
-    const customerSetErrors = json.data?.customerSet?.userErrors ?? [];
-    if (customerSetErrors.length) {
-      throw new Error(customerSetErrors[0]?.message || "Failed to save favorites.");
-    }
-  };
-
+  const token = await shopify.sessionToken.get();
+  let response: Response;
   try {
-    await tryMutation(
-      `mutation SaveFavorites(
-        $namespace: String!,
-        $key: String!,
-        $type: String!,
-        $value: String!
-      ) {
-        metafieldsSet(
-          metafields: [
-            {
-              owner: "CUSTOMER"
-              namespace: $namespace
-              key: $key
-              type: $type
-              value: $value
-            }
-          ]
-        ) {
-          userErrors {
-            message
-          }
-        }
-      }`,
-      {
-        namespace: FAVORITES_NAMESPACE,
-        key: FAVORITES_KEY,
-        type: FAVORITES_TYPE,
-        value,
+    response = await fetch(`${APP_BACKEND_URL}/api/customer-favorites`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify({ productIds: nextIds }),
+    });
   } catch {
-    await tryMutation(
-      `mutation SaveFavoritesViaCustomerSet(
-        $namespace: String!,
-        $key: String!,
-        $type: String!,
-        $value: String!
-      ) {
-        customerSet(
-          input: {
-            metafields: [
-              {
-                namespace: $namespace
-                key: $key
-                type: $type
-                value: $value
-              }
-            ]
-          }
-        ) {
-          userErrors {
-            message
-          }
-        }
-      }`,
-      {
-        namespace: FAVORITES_NAMESPACE,
-        key: FAVORITES_KEY,
-        type: FAVORITES_TYPE,
-        value,
-      },
-    );
+    throw new Error("Failed to save favorites.");
+  }
+  let json: SaveFavoritesResponse = {};
+  try {
+    json = (await response.json()) as SaveFavoritesResponse;
+  } catch {
+    // ignore parse errors
+  }
+  if (!response.ok || !json.ok) {
+    throw new Error(json.error || "Failed to save favorites.");
   }
 }
 
@@ -470,6 +392,8 @@ function Extension() {
     if (!idsToRemove.length || favoritesUpdateLoading) return;
     const removeSet = new Set(idsToRemove);
     const nextItems = state.items.filter((item) => !removeSet.has(item.id));
+    const previousItems = state.items;
+    const previousSelection = selection;
     const nextSelection: Record<string, Selection> = {};
     for (const item of nextItems) {
       const previous = selection[item.id];
@@ -486,9 +410,11 @@ function Extension() {
     } catch (error) {
       setState((prev) => ({
         ...prev,
+        items: previousItems,
         error:
           error instanceof Error ? error.message : translate("favoritesUpdateError"),
       }));
+      setSelection(previousSelection);
     } finally {
       setFavoritesUpdateLoading(false);
     }
@@ -550,6 +476,37 @@ function Extension() {
                 <s-grid-item key={item.id}>
                   <s-box padding="base" border="base" borderRadius="base">
                     <s-stack gap="small-200">
+                      {selectableVariants.length > 0 ? (
+                        <s-checkbox
+                          label={translate("select")}
+                          checked={Boolean(
+                            canPurchase && itemSelection?.selected,
+                          )}
+                          disabled={!canPurchase}
+                          onChange={(event) => {
+                            if (!canPurchase) {
+                              event.preventDefault();
+                              return;
+                            }
+                            const target =
+                              event.currentTarget as HTMLInputElement;
+                            const checked = target.checked;
+                            setSelection((prev) => {
+                              const previous = prev[item.id];
+                              const resolvedVariant =
+                                previous?.variantId ||
+                                pickDefaultVariantId(item);
+                              return {
+                                ...prev,
+                                [item.id]: {
+                                  selected: checked,
+                                  variantId: resolvedVariant,
+                                },
+                              };
+                            });
+                          }}
+                        />
+                      ) : null}
                       {item.imageUrl ? (
                         <s-image
                           src={item.imageUrl}
@@ -599,43 +556,11 @@ function Extension() {
                                   }))
                                 }
                               >
-                                {variant.title}
+                                <s-text type="small">{variant.title}</s-text>
                               </s-button>
                             );
                           })}
                         </s-stack>
-                      ) : null}
-                      {selectableVariants.length > 0 ? (
-                        <s-checkbox
-                          checked={Boolean(
-                            canPurchase && itemSelection?.selected,
-                          )}
-                          disabled={!canPurchase}
-                          onChange={(event) => {
-                            if (!canPurchase) {
-                              event.preventDefault();
-                              return;
-                            }
-                            const target =
-                              event.currentTarget as HTMLInputElement;
-                            const checked = target.checked;
-                            setSelection((prev) => {
-                              const previous = prev[item.id];
-                              const resolvedVariant =
-                                previous?.variantId ||
-                                pickDefaultVariantId(item);
-                              return {
-                                ...prev,
-                                [item.id]: {
-                                  selected: checked,
-                                  variantId: resolvedVariant,
-                                },
-                              };
-                            });
-                          }}
-                        >
-                          {translate("select")}
-                        </s-checkbox>
                       ) : null}
                       {item.url ? (
                         <s-button

@@ -33,3 +33,24 @@ export function toggleFavorite(
   set.add(productGid);
   return { next: Array.from(set), action: "added" };
 }
+
+export function applyFavoriteAction(
+  current: string[],
+  productGid: string,
+  action: "add" | "remove",
+): { next: string[]; action: "added" | "removed" | "unchanged" } {
+  const set = new Set(current);
+  if (action === "add") {
+    if (set.has(productGid)) {
+      return { next: current, action: "unchanged" };
+    }
+    set.add(productGid);
+    return { next: Array.from(set), action: "added" };
+  }
+
+  if (!set.has(productGid)) {
+    return { next: current, action: "unchanged" };
+  }
+  set.delete(productGid);
+  return { next: Array.from(set), action: "removed" };
+}

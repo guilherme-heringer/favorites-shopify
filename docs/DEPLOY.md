@@ -62,6 +62,16 @@ A app em Docker corre `prisma migrate deploy` no arranque via `docker-start`.
 | `SCOPES` | `read_customers,write_customers,customer_read_customers,customer_write_customers` |
 | `NODE_ENV` | `production` (o Dockerfile já define) |
 
+**App nativo DLK (`POST /api/favorites`):**
+
+| Variável | Exemplo DLK |
+|----------|-------------|
+| `CUSTOMER_ACCOUNT_SHOP_ID` | `81260708052` |
+| `CUSTOMER_ACCOUNT_API_VERSION` | `2026-01` |
+| `CUSTOMER_ACCOUNT_ALLOWED_CLIENT_IDS` | `c5a43d43-e85e-4947-b2bc-d2931b387d03` |
+| `CUSTOMER_ACCOUNT_TOKEN_ISSUER` | `https://shopify.com/authentication/81260708052` |
+| `FAVORITES_SHOP_DOMAIN` | `dlk-fitness-moda.myshopify.com` |
+
 Opcional: `SHOP_CUSTOM_DOMAIN` — ver [`app/shopify.server.ts`](../app/shopify.server.ts).
 
 ## 4. Coolify (container)

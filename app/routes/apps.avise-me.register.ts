@@ -7,6 +7,7 @@ import {
   toggleFavorite,
 } from "../lib/favorites";
 import { saveCustomerFavoriteIds } from "../lib/save-customer-favorites.server";
+import { readCustomerFavoriteIds } from "../lib/read-customer-favorites.server";
 import { normalizeProductGid } from "../lib/validation";
 
 type CustomerMetafieldQueryResponse = {
@@ -169,33 +170,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const readResponse = await admin.graphql(
-      `#graphql
-        query CustomerFavorites($id: ID!, $namespace: String!, $key: String!) {
-          customer(id: $id) {
-            metafield(namespace: $namespace, key: $key) {
-              value
-            }
-          }
-        }`,
-      {
-        variables: {
-          id: customerGid,
-          namespace: FAVORITES_METAFIELD_NAMESPACE,
-          key: FAVORITES_METAFIELD_KEY,
-        },
-      },
-    );
-
-    const readJson = (await readResponse.json()) as CustomerMetafieldQueryResponse;
-    if (readJson.errors?.length) {
-      return Response.json(
-        { ok: false, error: readJson.errors[0].message },
-        { status: 500 },
-      );
-    }
-
-    const current = parseFavorites(readJson.data?.customer?.metafield?.value);
+    const current = await readCustomerFavoriteIds(admin, customerGid);
     const { next, action: toggleAction } = toggleFavorite(current, productGid);
 
     await saveCustomerFavoriteIds(admin, customerGid, next);

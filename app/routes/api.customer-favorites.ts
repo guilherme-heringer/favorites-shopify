@@ -1,7 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { authenticate } from "../shopify.server";
+import { SessionNotFoundError } from "@shopify/shopify-app-react-router/server";
+import { authenticate, unauthenticated } from "../shopify.server";
 import { saveCustomerFavoriteIds } from "../lib/save-customer-favorites.server";
-import { adminForCustomerAccountRequest } from "../lib/customer-account-admin.server";
+import { getFavoritesShopDomain } from "../lib/customer-access-token.server";
 
 function parseProductIds(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
@@ -96,8 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const customerGid =
       typeof sessionToken.sub === "string" ? sessionToken.sub : "";
-    const dest = typeof sessionToken.dest === "string" ? sessionToken.dest : "";
-    if (!customerGid || !dest) {
+    if (!customerGid) {
       return jsonWithCors(
         { ok: false, error: "Cliente não autenticado." },
         { status: 401 },
@@ -119,7 +119,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
     }
 
-    const admin = await adminForCustomerAccountRequest(request, dest);
+    const shop = getFavoritesShopDomain();
+    let admin: Awaited<ReturnType<typeof unauthenticated.admin>>["admin"];
+    try {
+      ({ admin } = await unauthenticated.admin(shop));
+    } catch (error) {
+      if (error instanceof SessionNotFoundError) {
+        return jsonWithCors(
+          {
+            ok: false,
+            error:
+              "App não autenticada nesta loja. Abra a app no admin Shopify (Favoritos - Lemoon).",
+          },
+          { status: 503 },
+        );
+      }
+      throw error;
+    }
+
     await saveCustomerFavoriteIds(admin, customerGid, productIds);
 
     return jsonWithCors({ ok: true, count: productIds.length });

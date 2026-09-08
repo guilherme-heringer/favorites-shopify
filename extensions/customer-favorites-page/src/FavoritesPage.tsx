@@ -9,6 +9,7 @@ import { useEffect, useState } from "preact/hooks";
 const CUSTOMER_ACCOUNT_API_VERSION = "2026-04";
 const FAVORITES_NAMESPACE = "$app";
 const FAVORITES_KEY = "favorites";
+const CUSTOMER_ACCOUNT_GRAPHQL = `shopify://customer-account/api/${CUSTOMER_ACCOUNT_API_VERSION}/graphql.json`;
 const APP_BACKEND_URL = "https://favorites-shopify.lemoon.dev";
 
 type ProductVariant = {
@@ -104,23 +105,20 @@ function formatPrice(amount?: string | null, currency?: string | null): string {
 }
 
 async function fetchFavoriteIds(): Promise<string[]> {
-  const response = await fetch(
-    `shopify://customer-account/api/${CUSTOMER_ACCOUNT_API_VERSION}/graphql.json`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query CustomerFavorites($namespace: String!, $key: String!) {
-          customer {
-            metafield(namespace: $namespace, key: $key) {
-              value
-            }
+  const response = await fetch(CUSTOMER_ACCOUNT_GRAPHQL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: `query CustomerFavorites($namespace: String!, $key: String!) {
+        customer {
+          metafield(namespace: $namespace, key: $key) {
+            value
           }
-        }`,
-        variables: { namespace: FAVORITES_NAMESPACE, key: FAVORITES_KEY },
-      }),
-    },
-  );
+        }
+      }`,
+      variables: { namespace: FAVORITES_NAMESPACE, key: FAVORITES_KEY },
+    }),
+  });
   if (!response.ok) {
     throw new Error("Customer Account API request failed.");
   }
@@ -339,7 +337,7 @@ function Extension() {
     return () => {
       cancelled = true;
     };
-  }, [translate]);
+  }, []);
 
   useEffect(() => {
     const next: Record<string, Selection> = {};
@@ -423,18 +421,19 @@ function Extension() {
   return (
     <s-page heading={translate("page.heading")}>
       {showRemoveAll ? (
-        <s-link
+        <s-button
           slot="secondary-actions"
-          tone="neutral"
-          onClick={(event) => {
-            event.preventDefault();
+          variant="secondary"
+          type="button"
+          disabled={favoritesUpdateLoading}
+          onClick={() => {
             void removeFavorites(selectedItemIds);
           }}
         >
           {favoritesUpdateLoading
             ? translate("removeAll.loading")
             : translate("removeAll.cta")}
-        </s-link>
+        </s-button>
       ) : null}
       {showBuyAll ? (
         <s-button
@@ -451,12 +450,15 @@ function Extension() {
       <s-section heading={translate("section.heading")}>
         {state.loading ? (
           <s-skeleton-paragraph content={translate("loading")} />
-        ) : state.error ? (
+        ) : state.error && !state.items.length ? (
           <s-banner tone="critical">{state.error}</s-banner>
         ) : !state.items.length ? (
           <s-text>{translate("empty")}</s-text>
         ) : (
           <s-stack gap="small-200">
+            {state.error ? (
+              <s-banner tone="critical">{state.error}</s-banner>
+            ) : null}
             {cartUrl ? (
               <s-text type="strong">
                 {`${i18n.formatNumber(selectedCount)} ${translate("buyAll.selectedSuffix")}`}
@@ -571,15 +573,16 @@ function Extension() {
                           {translate("viewProduct")}
                         </s-button>
                       ) : null}
-                      <s-link
-                        tone="neutral"
-                        onClick={(event) => {
-                          event.preventDefault();
+                      <s-button
+                        variant="tertiary"
+                        type="button"
+                        disabled={favoritesUpdateLoading}
+                        onClick={() => {
                           void removeFavorites([item.id]);
                         }}
                       >
                         {translate("removeOne")}
-                      </s-link>
+                      </s-button>
                     </s-stack>
                   </s-box>
                 </s-grid-item>
